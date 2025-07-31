@@ -28,6 +28,8 @@
             border-right: 1px solid rgba(255, 255, 255, 0.1);
             overflow-y: auto;
             padding: 1rem;
+            display: flex; /* Added for footer positioning */
+            flex-direction: column; /* Added for footer positioning */
         }
         #resize-handle {
             flex-basis: 6px;
@@ -67,35 +69,41 @@
     <div class="main-container">
         <!-- Left Control Panel -->
         <div id="left-panel">
-            <h2 class="text-lg font-semibold text-white mb-3 border-b border-gray-600 pb-2">Controls</h2>
-            <div class="space-y-4">
-                <div>
-                    <label for="waveType" class="block text-sm font-medium text-gray-300">Waveform Type</label>
-                    <select id="waveType" class="w-full mt-1 bg-gray-700 border border-gray-600 text-white rounded-lg p-2 focus:ring-cyan-500 focus:border-cyan-500">
-                        <option value="square">Square Wave</option>
-                        <option value="sawtooth">Sawtooth Wave</option>
-                        <option value="triangle">Triangle Wave</option>
-                    </select>
+            <div>
+                <h2 class="text-lg font-semibold text-white mb-3 border-b border-gray-600 pb-2">Controls</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="waveType" class="block text-sm font-medium text-gray-300">Waveform Type</label>
+                        <select id="waveType" class="w-full mt-1 bg-gray-700 border border-gray-600 text-white rounded-lg p-2 focus:ring-cyan-500 focus:border-cyan-500">
+                            <option value="square">Square Wave</option>
+                            <option value="sawtooth">Sawtooth Wave</option>
+                            <option value="triangle">Triangle Wave</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="terms" class="block text-sm font-medium text-gray-300">Number of Terms: <span id="termsValue">5</span></label>
+                        <input id="terms" type="range" min="0" max="100" value="30" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                     <div class="flex items-center space-x-2">
+                        <button id="playPause" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Pause</button>
+                    </div>
                 </div>
-                <div>
-                    <label for="terms" class="block text-sm font-medium text-gray-300">Number of Terms: <span id="termsValue">5</span></label>
-                    <input id="terms" type="range" min="0" max="100" value="30" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                </div>
-                 <div class="flex items-center space-x-2">
-                    <button id="playPause" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Pause</button>
+                <div class="mt-6 pt-4 border-t border-gray-600">
+                     <h3 class="text-md font-semibold text-white mb-2">How it Works</h3>
+                     <p class="text-gray-400 text-sm">
+                        This animation demonstrates the Fourier Series, a way to represent complex periodic functions as a sum of simple sine waves.
+                     </p>
+                     <ul class="list-disc list-inside space-y-1 text-gray-300 text-sm mt-2">
+                        <li>Each rotating circle is an "epicycle" representing one sine wave in the series.</li>
+                        <li>The final point's path draws the resulting waveform.</li>
+                        <li>Increase the "Number of Terms" to add more sine waves and better approximate the target waveform.</li>
+                     </ul>
                 </div>
             </div>
-            <div class="mt-6 pt-4 border-t border-gray-600">
-                 <h3 class="text-md font-semibold text-white mb-2">How it Works</h3>
-                 <p class="text-gray-400 text-sm">
-                    This animation demonstrates the Fourier Series, a way to represent complex periodic functions as a sum of simple sine waves.
-                 </p>
-                 <ul class="list-disc list-inside space-y-1 text-gray-300 text-sm mt-2">
-                    <li>Each rotating circle is an "epicycle" representing one sine wave in the series.</li>
-                    <li>The final point's path draws the resulting waveform.</li>
-                    <li>Increase the "Number of Terms" to add more sine waves and better approximate the target waveform.</li>
-                 </ul>
-            </div>
+            <!-- Footer Added Here -->
+            <footer class="mt-auto pt-4">
+                <p class="text-xs text-gray-500 text-center">NitaD, Univ Paris-Saclay, 2025</p>
+            </footer>
         </div>
 
         <!-- Draggable Handle -->
