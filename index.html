@@ -58,6 +58,9 @@
         #left-panel::-webkit-scrollbar-track { background: #1f2937; }
         #left-panel::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
         #left-panel::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; background: #4b5563; border-radius: 5px; outline: none; transition: opacity .2s; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background: #67e8f9; border-radius: 50%; cursor: pointer; }
+        input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; background: #67e8f9; border-radius: 50%; cursor: pointer; }
     </style>
 </head>
 <body class="text-gray-200 flex flex-col h-screen">
@@ -67,7 +70,6 @@
     </header>
 
     <div class="main-container">
-        <!-- Left Control Panel -->
         <div id="left-panel">
             <div>
                 <h2 class="text-lg font-semibold text-white mb-3 border-b border-gray-600 pb-2">Controls</h2>
@@ -78,13 +80,23 @@
                             <option value="square">Square Wave</option>
                             <option value="sawtooth">Sawtooth Wave</option>
                             <option value="triangle">Triangle Wave</option>
+                            <option value="fullRectified">Full-Rectified Sine</option>
+                            <option value="halfRectified">Half-Rectified Sine</option>
                         </select>
                     </div>
                     <div>
                         <label for="terms" class="block text-sm font-medium text-gray-300">Number of Terms: <span id="termsValue">5</span></label>
-                        <input id="terms" type="range" min="0" max="100" value="30" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <input id="terms" type="range" min="0" max="100" value="5" class="w-full">
                     </div>
-                     <div class="flex items-center space-x-2">
+                    <div>
+                        <label for="speed" class="block text-sm font-medium text-gray-300">Animation Speed: <span id="speedValue">1.0</span>x</label>
+                        <input id="speed" type="range" min="0" max="200" value="100" class="w-full">
+                    </div>
+                    <div>
+                        <label for="trail" class="block text-sm font-medium text-gray-300">Wave Trail Length: <span id="trailValue">100</span>%</label>
+                        <input id="trail" type="range" min="10" max="100" value="100" class="w-full">
+                    </div>
+                    <div class="flex items-center space-x-2">
                         <button id="playPause" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Pause</button>
                     </div>
                 </div>
@@ -94,22 +106,19 @@
                         This animation demonstrates the Fourier Series, a way to represent complex periodic functions as a sum of simple sine waves.
                      </p>
                      <ul class="list-disc list-inside space-y-1 text-gray-300 text-sm mt-2">
-                        <li>Each rotating circle is an "epicycle" representing one sine wave in the series.</li>
+                        <li>Each rotating circle is an "epicycle" representing one term (a sine or cosine wave) in the series.</li>
                         <li>The final point's path draws the resulting waveform.</li>
-                        <li>Increase the "Number of Terms" to add more sine waves and better approximate the target waveform.</li>
+                        <li>Increase the "Number of Terms" to add more waves and better approximate the target waveform.</li>
                      </ul>
                 </div>
             </div>
-            <!-- Footer Added Here -->
             <footer class="mt-auto pt-4">
                 <p class="text-xs text-gray-500 text-center">NitaD, Univ Paris-Saclay, 2025</p>
             </footer>
         </div>
 
-        <!-- Draggable Handle -->
         <div id="resize-handle"></div>
 
-        <!-- Right Canvas Panel -->
         <div id="right-panel">
             <canvas id="fourierCanvas"></canvas>
         </div>
@@ -127,6 +136,12 @@
             const termsSlider = document.getElementById('terms');
             const termsValueSpan = document.getElementById('termsValue');
             const playPauseBtn = document.getElementById('playPause');
+            // --- New DOM Element References ---
+            const speedSlider = document.getElementById('speed');
+            const speedValueSpan = document.getElementById('speedValue');
+            const trailSlider = document.getElementById('trail');
+            const trailValueSpan = document.getElementById('trailValue');
+
 
             // --- State Variables ---
             let waveType = 'square';
@@ -135,8 +150,11 @@
             let wave = [];
             let isPlaying = true;
             let isResizing = false;
+            // --- New State Variables ---
+            let animationSpeed = 0.02;
+            let trailLength = 1.0;
 
-            // --- Logarithmic Slider Configuration ---
+            // --- Logarithmic Slider for Terms ---
             const minTerms = 1;
             const maxTerms = 200;
 
@@ -157,17 +175,29 @@
                 resetAnimation();
             }
 
-
             function resizeCanvas() {
-                // Set canvas drawing buffer size to match its display size
                 canvas.width = rightPanel.clientWidth;
                 canvas.height = rightPanel.clientHeight;
+                resetAnimation();
             }
 
             // --- Event Listeners ---
             waveTypeSelector.addEventListener('change', (e) => { waveType = e.target.value; resetAnimation(); });
             termsSlider.addEventListener('input', updateTerms);
             
+            // --- New Event Listeners ---
+            speedSlider.addEventListener('input', (e) => {
+                const speedMultiplier = parseFloat(e.target.value) / 100; // Value from 0.0 to 2.0
+                animationSpeed = 0.02 * speedMultiplier * 2; // Base speed is 0.02
+                speedValueSpan.textContent = (speedMultiplier * 2).toFixed(1);
+            });
+
+            trailSlider.addEventListener('input', (e) => {
+                trailLength = parseFloat(e.target.value) / 100; // Value from 0.1 to 1.0
+                trailValueSpan.textContent = e.target.value;
+            });
+
+
             playPauseBtn.addEventListener('click', () => {
                 isPlaying = !isPlaying;
                 playPauseBtn.textContent = isPlaying ? 'Pause' : 'Play';
@@ -193,12 +223,21 @@
                 ctx.fillStyle = '#111827';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+                let yOffset = 0; // For DC component of some waves
+                const baseRadius = canvas.height * 0.2; // A base radius for scaling
                 const centerX = canvas.width * 0.3;
                 const centerY = canvas.height / 2;
                 const waveStartX = canvas.width * 0.6;
 
+                // Set DC offset for relevant waves
+                if (waveType === 'fullRectified') {
+                    yOffset = -baseRadius * (2 / Math.PI);
+                } else if (waveType === 'halfRectified') {
+                    yOffset = -baseRadius * (1 / Math.PI);
+                }
+
                 let x = centerX;
-                let y = centerY;
+                let y = centerY + yOffset;
 
                 // --- Draw Epicycles ---
                 for (let i = 0; i < numTerms; i++) {
@@ -206,39 +245,59 @@
                     const prevY = y;
 
                     let n, radius, freq, phase = 0;
-
-                    // Calculate Fourier coefficients based on wave type
+                    
                     switch (waveType) {
                         case 'square':
                             n = i * 2 + 1;
-                            radius = (canvas.height * 0.2) * (4 / (n * Math.PI));
+                            radius = baseRadius * (4 / (n * Math.PI));
                             freq = n;
                             break;
                         case 'sawtooth':
                             n = i + 1;
-                            radius = (canvas.height * 0.25) * (2 / (n * Math.PI));
+                            radius = baseRadius * (2 / (n * Math.PI));
                             freq = n;
                             break;
                         case 'triangle':
                              n = i * 2 + 1;
-                             radius = (canvas.height * 0.25) * (8 / (Math.pow(n * Math.PI, 2)));
-                             // Alternate phase for triangle wave
-                             phase = (i % 2 === 0) ? 0 : Math.PI;
+                             radius = (baseRadius * 1.25) * (8 / (Math.pow(n * Math.PI, 2)));
+                             // This phase shift creates an alternating sign series
+                             phase = (i % 2 === 0) ? 0 : Math.PI; 
                              freq = n;
                              break;
+                        case 'fullRectified':
+                            // Series: 2/pi - 4/pi * sum(cos(2kt)/(4k^2-1)) for k=1 to inf
+                            const k_full = i + 1;
+                            n = 2 * k_full;
+                            radius = baseRadius * (4 / (Math.PI * (n*n - 1)));
+                            freq = n;
+                            phase = Math.PI / 2; // Cosine term is a sine shifted by PI/2
+                            break;
+                        case 'halfRectified':
+                             // Series: 1/pi + 1/2*sin(t) - 2/pi * sum(cos(2kt)/(4k^2-1)) for k=1 to inf
+                            if (i === 0) { // Special case for sin(t) term
+                                n = 1;
+                                radius = baseRadius * 0.5; // From 1/2*sin(t)
+                                freq = n;
+                                phase = 0;
+                            } else { // Cosine terms
+                                const k_half = i;
+                                n = 2 * k_half;
+                                radius = baseRadius * (2 / (Math.PI * (n*n - 1)));
+                                freq = n;
+                                phase = Math.PI/2; // It's a negative cosine term
+                            }
+                            break;
                     }
                     
                     x += radius * Math.cos(freq * time + phase);
                     y += radius * Math.sin(freq * time + phase);
 
-                    // Draw circle
                     ctx.beginPath();
                     ctx.arc(prevX, prevY, Math.abs(radius), 0, 2 * Math.PI);
                     ctx.strokeStyle = `hsla(180, 100%, 50%, 0.3)`;
                     ctx.lineWidth = 1;
                     ctx.stroke();
 
-                    // Draw radius line
                     ctx.beginPath();
                     ctx.moveTo(prevX, prevY);
                     ctx.lineTo(x, y);
@@ -246,7 +305,6 @@
                     ctx.stroke();
                 }
 
-                // Add the new point to the wave array
                 wave.unshift(y);
 
                 // --- Draw the Resulting Waveform ---
@@ -255,11 +313,10 @@
                 for (let i = 1; i < wave.length; i++) {
                     ctx.lineTo(waveStartX + i, wave[i]);
                 }
-                ctx.strokeStyle = '#67e8f9'; // Cyan color for the wave
+                ctx.strokeStyle = '#67e8f9';
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
-                // Connect the epicycle tip to the start of the wave
                 ctx.beginPath();
                 ctx.moveTo(x, y);
                 ctx.lineTo(waveStartX, wave[0]);
@@ -268,19 +325,22 @@
                 ctx.stroke();
                 ctx.setLineDash([]);
 
-
-                // Keep the wave array from getting too long
-                if (wave.length > canvas.width - waveStartX) {
+                // Trim the wave array based on the trail length slider
+                const maxWaveLength = (canvas.width - waveStartX) * trailLength;
+                if (wave.length > maxWaveLength) {
                     wave.pop();
                 }
 
-                time += 0.02; // Increment time for animation
+                time += animationSpeed;
 
                 requestAnimationFrame(animate);
             }
 
             // --- Initial Setup ---
             updateTerms();
+            // Manually trigger initial text update for new sliders
+            speedValueSpan.textContent = (parseFloat(speedSlider.value) / 100 * 2).toFixed(1);
+            trailValueSpan.textContent = trailSlider.value;
             resizeCanvas();
             animate();
         });
