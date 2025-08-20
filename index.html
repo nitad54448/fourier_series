@@ -72,7 +72,6 @@
     <div class="main-container">
         <div id="left-panel">
             <div>
-                <h2 class="text-lg font-semibold text-white mb-3 border-b border-gray-600 pb-2">Controls</h2>
                 <div class="space-y-4">
                     <div>
                         <label for="waveType" class="block text-sm font-medium text-gray-300">Waveform Type</label>
@@ -80,21 +79,22 @@
                             <option value="square">Square Wave</option>
                             <option value="sawtooth">Sawtooth Wave</option>
                             <option value="triangle">Triangle Wave</option>
+                            <option value="pulseTrain">Pulse Train</option>
                             <option value="fullRectified">Full-Rectified Sine</option>
                             <option value="halfRectified">Half-Rectified Sine</option>
                         </select>
                     </div>
+                    <div id="dutyCycleControl" class="hidden">
+                        <label for="dutyCycle" class="block text-sm font-medium text-gray-300">Duty Cycle: <span id="dutyCycleValue">50</span>%</label>
+                        <input id="dutyCycle" type="range" min="1" max="99" value="50" class="w-full">
+                    </div>
                     <div>
-                        <label for="terms" class="block text-sm font-medium text-gray-300">Number of Terms: <span id="termsValue">5</span></label>
-                        <input id="terms" type="range" min="0" max="100" value="5" class="w-full">
+                        <label for="terms" class="block text-sm font-medium text-gray-300">Number of Terms: <span id="termsValue">24</span></label>
+                        <input id="terms" type="range" min="0" max="100" value="60" class="w-full">
                     </div>
                     <div>
                         <label for="speed" class="block text-sm font-medium text-gray-300">Animation Speed: <span id="speedValue">1.0</span>x</label>
-                        <input id="speed" type="range" min="0" max="200" value="100" class="w-full">
-                    </div>
-                    <div>
-                        <label for="trail" class="block text-sm font-medium text-gray-300">Wave Trail Length: <span id="trailValue">100</span>%</label>
-                        <input id="trail" type="range" min="10" max="100" value="100" class="w-full">
+                        <input id="speed" type="range" min="5" max="200" value="100" class="w-full">
                     </div>
                     <div class="flex items-center space-x-2">
                         <button id="playPause" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Pause</button>
@@ -103,7 +103,7 @@
                 <div class="mt-6 pt-4 border-t border-gray-600">
                      <h3 class="text-md font-semibold text-white mb-2">How it Works</h3>
                      <p class="text-gray-400 text-sm">
-                        This animation demonstrates the Fourier Series, a way to represent complex periodic functions as a sum of simple sine waves.
+                        The Fourier Series allow a representation of any periodic function as a sum of sine waves.
                      </p>
                      <ul class="list-disc list-inside space-y-1 text-gray-300 text-sm mt-2">
                         <li>Each rotating circle is an "epicycle" representing one term (a sine or cosine wave) in the series.</li>
@@ -113,7 +113,7 @@
                 </div>
             </div>
             <footer class="mt-auto pt-4">
-                <p class="text-xs text-gray-500 text-center">NitaD, Univ Paris-Saclay, 2025</p>
+                <p class="text-xs text-gray-500 text-center">NitaD, Univ Paris-Saclay, june 2025</p>
             </footer>
         </div>
 
@@ -136,23 +136,23 @@
             const termsSlider = document.getElementById('terms');
             const termsValueSpan = document.getElementById('termsValue');
             const playPauseBtn = document.getElementById('playPause');
-            // --- New DOM Element References ---
             const speedSlider = document.getElementById('speed');
             const speedValueSpan = document.getElementById('speedValue');
-            const trailSlider = document.getElementById('trail');
-            const trailValueSpan = document.getElementById('trailValue');
+            const dutyCycleControl = document.getElementById('dutyCycleControl');
+            const dutyCycleSlider = document.getElementById('dutyCycle');
+            const dutyCycleValueSpan = document.getElementById('dutyCycleValue');
 
 
             // --- State Variables ---
             let waveType = 'square';
-            let numTerms = 5;
+            let numTerms = 24;
             let time = 0;
             let wave = [];
             let isPlaying = true;
             let isResizing = false;
-            // --- New State Variables ---
             let animationSpeed = 0.02;
-            let trailLength = 1.0;
+            const trailLength = 1.0; // Fixed value at 100%
+            let dutyCycle = 0.5;
 
             // --- Logarithmic Slider for Terms ---
             const minTerms = 1;
@@ -181,20 +181,30 @@
                 resetAnimation();
             }
 
+            function handleWaveTypeChange(e) {
+                waveType = e.target.value;
+                if (waveType === 'pulseTrain') {
+                    dutyCycleControl.classList.remove('hidden');
+                } else {
+                    dutyCycleControl.classList.add('hidden');
+                }
+                resetAnimation();
+            }
+
             // --- Event Listeners ---
-            waveTypeSelector.addEventListener('change', (e) => { waveType = e.target.value; resetAnimation(); });
+            waveTypeSelector.addEventListener('change', handleWaveTypeChange);
             termsSlider.addEventListener('input', updateTerms);
             
-            // --- New Event Listeners ---
             speedSlider.addEventListener('input', (e) => {
-                const speedMultiplier = parseFloat(e.target.value) / 100; // Value from 0.0 to 2.0
+                const speedMultiplier = parseFloat(e.target.value) / 100; // Value from 0.05 to 2.0
                 animationSpeed = 0.02 * speedMultiplier * 2; // Base speed is 0.02
                 speedValueSpan.textContent = (speedMultiplier * 2).toFixed(1);
             });
-
-            trailSlider.addEventListener('input', (e) => {
-                trailLength = parseFloat(e.target.value) / 100; // Value from 0.1 to 1.0
-                trailValueSpan.textContent = e.target.value;
+            
+            dutyCycleSlider.addEventListener('input', (e) => {
+                dutyCycle = parseFloat(e.target.value) / 100; // convert % to decimal
+                dutyCycleValueSpan.textContent = e.target.value;
+                resetAnimation();
             });
 
 
@@ -234,7 +244,10 @@
                     yOffset = -baseRadius * (2 / Math.PI);
                 } else if (waveType === 'halfRectified') {
                     yOffset = -baseRadius * (1 / Math.PI);
+                } else if (waveType === 'pulseTrain') {
+                    yOffset = -baseRadius * (dutyCycle - 0.5) * 2;
                 }
+
 
                 let x = centerX;
                 let y = centerY + yOffset;
@@ -260,10 +273,17 @@
                         case 'triangle':
                              n = i * 2 + 1;
                              radius = (baseRadius * 1.25) * (8 / (Math.pow(n * Math.PI, 2)));
-                             // This phase shift creates an alternating sign series
                              phase = (i % 2 === 0) ? 0 : Math.PI; 
                              freq = n;
                              break;
+                        case 'pulseTrain':
+                            // Series: A*d + sum(2A/(n*pi) * sin(n*pi*d) * cos(nt))
+                            n = i + 1;
+                            const sinComponent = Math.sin(n * Math.PI * dutyCycle);
+                            radius = baseRadius * (2 / (n * Math.PI)) * sinComponent;
+                            freq = n;
+                            phase = Math.PI / 2; // For cosine term
+                            break;
                         case 'fullRectified':
                             // Series: 2/pi - 4/pi * sum(cos(2kt)/(4k^2-1)) for k=1 to inf
                             const k_full = i + 1;
@@ -325,7 +345,7 @@
                 ctx.stroke();
                 ctx.setLineDash([]);
 
-                // Trim the wave array based on the trail length slider
+                // Trim the wave array
                 const maxWaveLength = (canvas.width - waveStartX) * trailLength;
                 if (wave.length > maxWaveLength) {
                     wave.pop();
@@ -338,9 +358,10 @@
 
             // --- Initial Setup ---
             updateTerms();
-            // Manually trigger initial text update for new sliders
+            // Manually trigger initial text update
             speedValueSpan.textContent = (parseFloat(speedSlider.value) / 100 * 2).toFixed(1);
-            trailValueSpan.textContent = trailSlider.value;
+            dutyCycleValueSpan.textContent = dutyCycleSlider.value;
+
             resizeCanvas();
             animate();
         });
