@@ -1,0 +1,23 @@
+{
+  "name": "fourier_series",
+  "version": "1.0.0",
+  "description": "This is an interactive web-based application that visualizes the Fourier Series, a fundamental concept in mathematics and signal processing. It demonstrates how complex periodic waveforms (like a square or sawtooth wave) can be approximated by summing up a series of simple sine waves.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nitad54448/fourier_series.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nitad54448/fourier_series/issues"
+  },
+  "homepage": "https://github.com/nitad54448/fourier_series#readme",
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}
